@@ -149,6 +149,12 @@ If login/signup fails in production with `ERR_CONNECTION_REFUSED` and the browse
 
 For this repo's single-project setup, frontend requests should go to same-origin `/api/*`.
 
+If `/api/auth/login` returns `405 Method Not Allowed` on Vercel:
+
+1. Make sure the deployment contains both `api/index.ts` and `api/[...path].ts`.
+2. Redeploy after pulling latest changes.
+3. Confirm you are deploying the intended branch/commit in Vercel.
+
 ## API Endpoints
 
 ### Auth

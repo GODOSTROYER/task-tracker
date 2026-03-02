@@ -44,10 +44,17 @@ export async function api<T = unknown>(endpoint: string, options: ApiOptions = {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  const data = await res.json();
+  const contentType = res.headers.get('content-type') || '';
+  const data = contentType.includes('application/json')
+    ? await res.json()
+    : await res.text();
 
   if (!res.ok) {
-    throw new Error(data.message || 'Something went wrong');
+    const message =
+      typeof data === 'object' && data && 'message' in data
+        ? String((data as { message?: unknown }).message || 'Something went wrong')
+        : `Request failed with status ${res.status}`;
+    throw new Error(message);
   }
 
   return data as T;
