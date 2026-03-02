@@ -139,6 +139,16 @@ Before deploying to Vercel, verify these production requirements:
 - `PORT` is not required on Vercel serverless functions.
 - Rotate all secrets immediately if they were shared publicly (`JWT_SECRET`, SMTP credentials, DB credentials).
 
+### Troubleshooting: app tries to call `http://localhost:5000` in production
+
+If login/signup fails in production with `ERR_CONNECTION_REFUSED` and the browser shows requests to `http://localhost:5000/api/...`, check:
+
+1. Vercel project **Environment Variables** for `NEXT_PUBLIC_API_BASE_URL`.
+2. Remove it (recommended for single-project deploy), or set it to your deployed origin.
+3. Redeploy after updating env vars.
+
+For this repo's single-project setup, frontend requests should go to same-origin `/api/*`.
+
 ## API Endpoints
 
 ### Auth
