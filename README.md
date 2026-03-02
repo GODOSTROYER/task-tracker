@@ -108,7 +108,36 @@ The frontend starts at `http://localhost:3000`.
 
 | Variable                   | Description     | Example                 |
 | -------------------------- | --------------- | ----------------------- |
-| `NEXT_PUBLIC_API_BASE_URL` | Backend API URL | `http://localhost:5000` |
+| `NEXT_PUBLIC_API_BASE_URL` | Optional backend URL override (local split frontend/backend dev) | `http://localhost:5000` |
+
+## Deploy on Vercel (Single Project)
+
+This repo is configured for a single Vercel deployment:
+
+- Next.js frontend is deployed from the repository root.
+- Express backend is exposed through `api/index.ts` and routed from `/api/*` via `vercel.json`.
+
+### Steps
+
+1. Import this repository into Vercel as one project (root directory `.`).
+2. Add the backend environment variables in Vercel project settings:
+   - `MONGO_URI`, `REDIS_URL`, `JWT_SECRET`
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
+   - `FROM_EMAIL`, `FROM_NAME`
+   - `FRONTEND_URL` (set this to your Vercel app URL)
+3. (Optional) Set `NEXT_PUBLIC_API_BASE_URL` only if you want a custom API base URL. For single deployment, leave it unset.
+4. Deploy. The frontend and API will both be served from the same Vercel project.
+
+### Production readiness checklist (important)
+
+Before deploying to Vercel, verify these production requirements:
+
+- `MONGO_URI` must point to a hosted MongoDB instance (for example, MongoDB Atlas). `mongodb://localhost:27017/...` will not work on Vercel.
+- `REDIS_URL` must point to a hosted Redis instance (for example, Upstash or Redis Cloud). `redis://localhost:6379` will not work on Vercel.
+- `FRONTEND_URL` must be your Vercel production URL (for example, `https://your-app.vercel.app`) because CORS is restricted to this value when set.
+- `NEXT_PUBLIC_API_BASE_URL` should usually be left unset for single-project deployment so the frontend uses same-origin `/api/*` routes.
+- `PORT` is not required on Vercel serverless functions.
+- Rotate all secrets immediately if they were shared publicly (`JWT_SECRET`, SMTP credentials, DB credentials).
 
 ## API Endpoints
 

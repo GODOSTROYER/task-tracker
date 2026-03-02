@@ -1,0 +1,15 @@
+{
+  "installCommand": "npm install && cd server && npm install",
+  "buildCommand": "npm run build",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "server/src/**"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.ts"
+    }
+  ]
+}
