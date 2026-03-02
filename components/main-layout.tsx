@@ -7,8 +7,9 @@ const AUTH_PATHS = ["/login", "/register", "/signup", "/", "/forgot-password", "
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const currentPath = pathname ?? "";
 
-  if (AUTH_PATHS.includes(pathname)) {
+  if (AUTH_PATHS.includes(currentPath)) {
     return <>{children}</>;
   }
 
