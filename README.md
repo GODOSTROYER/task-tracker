@@ -115,7 +115,7 @@ The frontend starts at `http://localhost:3000`.
 This repo is configured for a single Vercel deployment:
 
 - Next.js frontend is deployed from the repository root.
-- Express backend is exposed through `api/index.ts` and routed from `/api/*` via `vercel.json`.
+- Express backend is exposed through `pages/api/[...path].ts` (Next.js API catch-all).
 
 ### Steps
 
@@ -151,7 +151,7 @@ For this repo's single-project setup, frontend requests should go to same-origin
 
 If `/api/auth/login` returns `405 Method Not Allowed` on Vercel:
 
-1. Make sure the deployment contains both `api/index.ts` and `api/[...path].ts`.
+1. Make sure the deployment contains `pages/api/[...path].ts`.
 2. Redeploy after pulling latest changes.
 3. Confirm you are deploying the intended branch/commit in Vercel.
 

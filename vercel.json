@@ -1,9 +1,4 @@
 {
   "installCommand": "npm install && cd server && npm install",
-  "buildCommand": "npm run build",
-  "functions": {
-    "api/**/*.ts": {
-      "includeFiles": "server/src/**"
-    }
-  }
+  "buildCommand": "npm run build"
 }
