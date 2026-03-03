@@ -1,5 +1,7 @@
 # Mini Task Tracker
 
+**Live Deployment:** [https://wldd-task-tracker.arnavbule.me](https://wldd-task-tracker.arnavbule.me)
+
 A full-stack task management app built with **Next.js 15**, **Express**, **MongoDB**, and **Redis**.
 
 ## Tech Stack
