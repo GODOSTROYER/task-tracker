@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Keep development startup from generating repository instruction files.
+  agentRules: false,
 };
 
 export default nextConfig;

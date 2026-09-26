@@ -1,152 +1,123 @@
 # ProductSpace Task Tracker
 
-A production-ready mini SaaS for managing work across workspaces: a Next.js 16 (React 19) frontend, an Express + TypeScript REST API, Neon PostgreSQL through Sequelize, email-OTP sign-up with JWT sessions, and a drag-and-drop Kanban board with Board, List, Table and Timeline views. Built to match the ProductSpace Full Stack Developer Intern screening requirements.
+A workspace task tracker built for the ProductSpace Full Stack Developer Intern screening: Next.js 16 / React 19, an Express + TypeScript API, PostgreSQL through Sequelize, email verification, and Board, List, Table and Timeline views.
 
-![ProductSpace Task Tracker - Kanban board view of a workspace](docs/task-tracker-board.png)
+![ProductSpace Task Tracker - Kanban board](docs/task-tracker-board.png)
 
-## What it does
+## Features
 
-- **Accounts** - sign up with a name, email and password; a 6-digit OTP (valid for 10 minutes) is emailed to verify the address before the first sign-in. Passwords are hashed with bcrypt and sign-in returns a JWT that lasts 7 days.
-- **Password reset** - forgot-password emails a reset link that is valid for one hour.
-- **Workspaces** - create, rename and delete workspaces. Every row is owned by a user (`ownerId`) and every read and write is filtered by owner, so users only ever see their own data.
-- **Tasks** - title, description, status (`todo`, `in-progress`, `in-review`, `completed`), priority (`low`, `medium`, `high`), due date and a position used for ordering.
-- **Four views** - Board (Kanban with drag-and-drop between columns via dnd-kit), List, Table and Timeline. A drop is persisted through one batch endpoint inside a single database transaction.
-- **Onboarding** - a new account gets a "Getting Started" workspace with sample tasks the moment its email is verified.
-- **Settings** - update the display name or password.
-
-## Stack
-
-- Frontend: Next.js (React) + Tailwind, shadcn/ui components, dnd-kit for drag-and-drop
-- Backend: Node.js + Express + TypeScript
-- Database: **Neon PostgreSQL** via **Sequelize ORM**
-- Auth: bcrypt password hashing + JWT
-- Email: Nodemailer over SMTP for the OTP and password-reset mail
-- Validation and hardening: Zod request validation, centralized error handler, Helmet, express-rate-limit (100 requests per 15 minutes per IP)
-- Tests: Jest + Supertest against a Postgres test database, with email delivery mocked
-
-## Architecture
-
-```
-app/                  Next.js App Router pages: landing, auth, workspaces, tasks, settings
-components/           Sidebar, layout and shadcn/ui primitives
-lib/api.ts            Typed fetch wrapper and token helpers
-api/index.js          Vercel Function entry point: exports the compiled Express app
-server/src
-|-- controllers/      business logic
-|-- middleware/       JWT auth, Zod validation, centralized error handling
-|-- models/           Sequelize entities: User, Workspace, Task
-|-- routes/           HTTP wiring only
-|-- app.ts            Express app: Helmet, CORS, rate limit, idempotent DB init
-`-- server.ts         local entry point (listens on PORT)
-```
-
-- The Express app performs an idempotent database initialization before the API routes, so the local `server.ts` and the Vercel Function share the same app instance safely.
-- In production the frontend calls same-origin `/api/*` and `vercel.json` rewrites those requests to the Express function. Locally the frontend talks to `http://localhost:5000` through `NEXT_PUBLIC_API_BASE_URL`.
-- Task tenancy is enforced by `ownerId` checks in every task query; JWT Bearer auth protects the task and workspace endpoints.
-- More detail: [docs/architecture.md](docs/architecture.md), [docs/implementation.md](docs/implementation.md) and [docs/screening-requirements-comparison.md](docs/screening-requirements-comparison.md).
-
-## Requirement mapping
-
-- Signup/Login: `/api/auth/signup`, `/api/auth/login`
-- Password hashing: Sequelize `User` hooks with bcrypt
-- JWT auth + protected routes: `authMiddleware`
-- OTP verification: `/api/auth/verify-email`, `/api/auth/resend-otp`
-- Multi-user workspaces/tasks: rows owned by `ownerId`; all reads/writes filtered by owner
-- Kanban tasks: `todo`, `in-progress`, `in-review`, `completed`, plus priority, due date, and position
-- Validation: Zod-based `validate` middleware
-- Error handling: centralized `errorHandler`
-- DB schema: PostgreSQL tables for users, tasks, workspaces
-
-## API overview
-
-All endpoints speak JSON. Routes marked **JWT** require an `Authorization: Bearer <token>` header.
-
-| Method | Route | Auth | Purpose |
-| --- | --- | --- | --- |
-| POST | `/api/auth/signup` | - | Create an account and email the OTP |
-| POST | `/api/auth/login` | - | Sign in (verified accounts only); returns the JWT |
-| POST | `/api/auth/verify-email` | - | Verify the OTP; returns the JWT and seeds the starter workspace |
-| POST | `/api/auth/resend-otp` | - | Send a fresh OTP |
-| POST | `/api/auth/forgot-password` | - | Email a password-reset link |
-| POST | `/api/auth/reset-password` | - | Set a new password with the reset token |
-| PUT | `/api/auth/profile` | JWT | Update name or password |
-| GET, POST | `/api/workspaces` | JWT | List or create workspaces |
-| GET, PUT, DELETE | `/api/workspaces/:id` | JWT | Read, rename or delete a workspace (deleting removes its tasks) |
-| POST | `/api/workspaces/demo` | JWT | Create a sample workspace with tasks |
-| GET | `/api/tasks?workspaceId=` | JWT | List tasks, ordered by status and position |
-| POST | `/api/tasks` | JWT | Create a task |
-| PUT | `/api/tasks/batch` | JWT | Move or reorder several tasks in one transaction |
-| PUT, DELETE | `/api/tasks/:id` | JWT | Update or delete a task |
-| GET | `/api/health` | - | Liveness check |
+- Email-verified accounts with bcrypt passwords and seven-day JWT sessions.
+- Single-owner workspaces and tasks; API queries enforce ownership.
+- Tasks with description, status, priority, due date and ordering; transactional drag-and-drop updates.
+- A starter workspace on verification, profile editing and email password resets.
+- Session validation through `GET /api/auth/me`; password changes and resets revoke previously issued sessions.
 
 ## Run locally
 
-Prerequisites: Node.js 24, a PostgreSQL database (a free Neon project works, but any Postgres URL does) and an SMTP account for the OTP and reset emails (Gmail with an app password is the default).
+Use Node.js 24, PostgreSQL (local or Neon) and an SMTP account. From the repository root:
 
 ```bash
-git clone https://github.com/GODOSTROYER/task-tracker.git
-cd task-tracker
-
-# backend
-cd server
-npm install
-cp .env.example .env        # fill in DATABASE_URL, JWT_SECRET and the SMTP_* values
-npm run dev                 # API on http://localhost:5000; Sequelize creates the tables on first boot
-
-# in root
-npm install
-cp .env.example .env.local  # NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
-npm run dev                 # UI on http://localhost:3000
+npm ci
+npm --prefix server ci
+cp server/.env.example server/.env
+cp .env.example .env.local
 ```
 
-Tests: `cd server && npm test` (uses `DATABASE_URL_TEST` when it is set, otherwise `DATABASE_URL`).
+Set `DATABASE_URL`, a strong `JWT_SECRET`, SMTP credentials and sender details in `server/.env`. Set `NEXT_PUBLIC_API_BASE_URL=http://localhost:5000` in `.env.local`. Then:
 
-## Environment variables
+```bash
+npm run build:server
+npm run db:migrate
+npm run db:check
+npm run dev:server
+```
 
-### Local backend (`server/.env`)
+In another terminal run `npm run dev` and open `http://localhost:3000`. The API listens on port 5000. **Schema changes are explicit: runtime startup and API requests never synchronize tables.**
 
-- `PORT=5000`
-- `DATABASE_URL=postgresql://<user>:<password>@<host>/<db>?sslmode=require`
-- `JWT_SECRET=<strong-secret>`
-- `SMTP_HOST=smtp.gmail.com`
-- `SMTP_PORT=587`
-- `SMTP_USER=<smtp-user>`
-- `SMTP_PASS=<smtp-password>`
-- `FROM_EMAIL=<verified-sender>`
-- `FROM_NAME=Task Tracker`
-- `FRONTEND_URL=http://localhost:3000`
+## Architecture
 
-`DATABASE_URL_TEST` is optional and only used by the test suite. See [server/.env.example](server/.env.example).
+The Next.js frontend uses `lib/api.ts` and the auth context. The Express app in `server/src/app.ts` is shared by the local server and `api/index.js` Vercel entry point. Routes validate inputs with Zod; controllers enforce ownership and transactions; Sequelize models access PostgreSQL. Runtime initialization checks connectivity only.
 
-### Frontend (`.env.local`)
+See [architecture](docs/architecture.md), [implementation](docs/implementation.md) and [requirement mapping](docs/screening-requirements-comparison.md).
 
-- `NEXT_PUBLIC_API_BASE_URL=http://localhost:5000`
+## API overview
 
-In Vercel production, leave `NEXT_PUBLIC_API_BASE_URL` unset so the app uses same-origin `/api`. See [.env.example](.env.example).
+Routes below include the `/api` prefix. Protected routes require `Authorization: Bearer <token>`.
 
-## Neon setup
+| Method | Route | Access | Purpose |
+| --- | --- | --- | --- |
+| POST | `/api/auth/signup` | Public | Register and email a verification code |
+| POST | `/api/auth/login` | Public | Sign in to a verified account |
+| POST | `/api/auth/verify-email` | Public | Verify code, seed starter workspace, return session |
+| POST | `/api/auth/resend-otp` | Public | Request another verification code |
+| POST | `/api/auth/forgot-password` | Public | Request reset email |
+| POST | `/api/auth/reset-password` | Public | Consume reset token and set password |
+| GET | `/api/auth/me` | JWT | Validate session and return current user |
+| PUT | `/api/auth/profile` | JWT | Update name or password; password requires `currentPassword` and returns a fresh token |
+| GET, POST | `/api/workspaces` | JWT | List or create workspaces |
+| GET, PUT, DELETE | `/api/workspaces/:id` | JWT | Read, rename or delete owned workspace and its tasks |
+| POST | `/api/workspaces/demo` | JWT | Create sample workspace |
+| GET, POST | `/api/tasks` | JWT | List tasks (optional `workspaceId` filter) or create a task |
+| PUT | `/api/tasks/:id/move` | JWT | Move relative to a task or status using `{overId}`; return updated workspace tasks |
+| PUT | `/api/tasks/batch` | JWT | Atomically update up to 500 unique tasks |
+| PUT, DELETE | `/api/tasks/:id` | JWT | Update or delete owned task |
+| GET | `/api/health` | Public | Process liveness |
+| GET | `/api/ready` | Public | Database connectivity and required migration readiness |
 
-1. Create a Neon project/database.
-2. Copy the pooled connection string to `DATABASE_URL`.
-3. Start the backend; Sequelize auto-syncs the tables on boot.
+## Configuration
 
-## Vercel deployment
+[server/.env.example](server/.env.example) documents `PORT`, `DATABASE_URL`, `JWT_SECRET`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL`, `FROM_NAME` and `FRONTEND_URL`.
 
-- Root project: `task-tracker`
-- Project name: `productspace-task-tracker`
-- Build command: `npm --prefix server run build && npm run build`
-- Install command: `npm install && npm --prefix server install`
-- Add the backend variables above (`DATABASE_URL`, `JWT_SECRET`, `SMTP_*`, `FROM_*`, `FRONTEND_URL`) as Production environment variables and leave `NEXT_PUBLIC_API_BASE_URL` unset.
-- [vercel.json](vercel.json) sets both commands, rewrites `/api/(.*)` to the `api/index.js` function and gives it a 30-second maximum duration.
+`CORS_ORIGINS` optionally overrides the permitted browser origins. Set `TRUST_PROXY_HOPS` only for a known proxy topology. On Vercel, leave `NEXT_PUBLIC_API_BASE_URL` unset to use same-origin `/api` requests.
 
-## Limitations
+## Checks and safe database tests
 
-- Workspaces are single-owner; there is no sharing or collaboration between accounts.
-- Sign-in requires a verified email, so a working SMTP account is mandatory and there is no demo login.
-- The schema is created with Sequelize `sync()` on boot rather than versioned migrations.
-- Rate limiting is in-memory, so on Vercel it applies per function instance rather than globally.
-- The JWT lives in `localStorage` for 7 days; there are no refresh tokens or server-side revocation.
+From the root:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:unit
+npm --prefix server run build
+npm run build
+```
+
+Integration tests require a **disposable** PostgreSQL database. They migrate and truncate application tables. Set both variables in the shell running the tests (PowerShell example):
+
+```powershell
+$env:DATABASE_URL_TEST = 'postgresql://postgres:postgres@localhost:5432/task_tracker_test'
+$env:ALLOW_TEST_DATABASE_RESET = 'true'
+npm test
+```
+
+The database name must end in `_test`, and the target must differ from `DATABASE_URL`. There is no fallback to the application database. Email is mocked. `npm --prefix server run test:coverage` uses the same safety gates.
+
+## Migrations and deployment
+
+The transactional, additive migration creates missing baseline tables, adds verification-attempt tracking and indexes, and records its baseline in `schema_migrations`. It adopts the existing schema without deleting user, workspace or task rows. Integration coverage exercises adoption of an existing schema and repeated migration runs.
+
+For deployment, install with `npm ci && npm --prefix server ci`, set `DATABASE_URL` to the intended database and complete this required release gate **before deploying the new application**:
+
+```bash
+npm run build:server
+npm run db:migrate
+npm run db:check
+```
+
+`db:check` is read-only and must pass; readiness returns 503 when the required migration is missing. Review the target and take an appropriate backup first. Migrations are not run by the Vercel build or function cold starts. [vercel.json](vercel.json) contains the install/build commands and API rewrite; configure backend variables and the deployed `FRONTEND_URL` in the deployment environment.
+
+The authentication upgrade rejects old JWTs that lack the password-bound session version. Existing plaintext verification codes and reset tokens no longer match the hashed checks; users must request new codes or links. Account and task data are preserved. Migration SQL does not itself revoke tokens; the upgraded authentication code changes their acceptance.
+
+These instructions describe deployment preparation; the maintenance work did not access a production database or deploy the application.
+
+## Limits and dependency status
+
+- Workspaces have one owner; sharing is not implemented.
+- SMTP delivery requires a configured provider. OTPs expire after ten minutes; reset links after one hour. Challenges are stored as keyed hashes, verification allows five failed attempts per code, and resend/reset requests have a one-minute cooldown.
+- Tokens remain in `localStorage`; there are no refresh tokens or per-device server logout. Password changes/reset revoke old tokens through a password-bound JWT version checked against the current user record.
+- Rate limits are in memory (100 API requests and 20 authentication attempts per 15 minutes per IP), so separate function instances do not share counters. This is not a claim of production readiness.
+- A moderate transitive [`uuid` advisory](https://github.com/advisories/GHSA-w5hq-g745-h8pq) remains through Sequelize. It concerns supplied-buffer APIs in v3/v5/v6; the inspected Sequelize paths use v1/v4 without supplied buffers. No incompatible forced override was introduced. Reassess with dependency updates rather than treating this as a clean audit.
 
 ## Author
 
-**Arnav Bule** - [arnavbule.in](https://www.arnavbule.in) | [github.com/GODOSTROYER](https://github.com/GODOSTROYER)
+**Arnav Bule** — [arnavbule.in](https://www.arnavbule.in) | [GitHub](https://github.com/GODOSTROYER)

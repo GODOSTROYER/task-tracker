@@ -1,6 +1,6 @@
+import nodemailer from 'nodemailer';
 import request from 'supertest';
 import app from '../app';
-import User from '../models/User';
 import Task from '../models/Task';
 
 async function createVerifiedUser(email: string) {
@@ -8,10 +8,13 @@ async function createVerifiedUser(email: string) {
     .post('/api/auth/signup')
     .send({ name: email.split('@')[0], email, password: 'Password1!' });
 
-  const user = await User.findOne({ where: { email } });
+  const sendMail = nodemailer.createTransport({}).sendMail as jest.Mock;
+  const html = sendMail.mock.calls[sendMail.mock.calls.length - 1][0].html as string;
+  const otp = html.match(/letter-spacing: 8px; color: #4f46e5;">(\d{6})/)?.[1];
+  if (!otp) throw new Error('Verification email did not contain an OTP');
   const verify = await request(app)
     .post('/api/auth/verify-email')
-    .send({ email, otp: user!.verificationOtp });
+    .send({ email, otp });
 
   return { token: verify.body.token, userId: verify.body.user.id };
 }
@@ -92,5 +95,21 @@ describe('Workspace Endpoints', () => {
 
     const tasks = await Task.findAll({ where: { workspaceId: create.body.id } });
     expect(tasks).toHaveLength(0);
+  });
+});
+
+
+describe('Workspace transaction regressions', () => {
+  it('rolls back demo workspace creation when task seeding fails', async () => {
+    const user = await createVerifiedUser('seed-failure@example.com');
+    const Workspace = (await import('../models/Workspace')).default;
+    const before = await Workspace.count({ where: { ownerId: user.userId } });
+    const seed = jest.spyOn(Task, 'bulkCreate').mockRejectedValueOnce(new Error('seed failure'));
+    const log = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const result = await request(app).post('/api/workspaces/demo').set('Authorization', `Bearer ${user.token}`);
+      expect(result.status).toBe(500);
+      expect(await Workspace.count({ where: { ownerId: user.userId } })).toBe(before);
+    } finally { seed.mockRestore(); log.mockRestore(); }
   });
 });

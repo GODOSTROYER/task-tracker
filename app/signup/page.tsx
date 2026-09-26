@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { PasswordRequirements, isPasswordValid } from '@/components/password-requirements';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +33,9 @@ export default function SignupPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Registration failed';
       setError(message);
+      if (err instanceof ApiError && err.status === 503) {
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+      }
     } finally {
       setLoading(false);
     }

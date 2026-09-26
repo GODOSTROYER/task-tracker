@@ -4,10 +4,18 @@ interface ApiOptions {
   method?: string;
   body?: unknown;
   token?: string | null;
+  signal?: AbortSignal;
+}
+
+export const SESSION_CHANGED = 'session-changed';
+
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) { super(message); this.status = status; }
 }
 
 export async function api<T = unknown>(endpoint: string, options: ApiOptions = {}): Promise<T> {
-  const { method = 'GET', body, token } = options;
+  const { method = 'GET', body, token, signal } = options;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -20,13 +28,19 @@ export async function api<T = unknown>(endpoint: string, options: ApiOptions = {
   const res = await fetch(`${API_BASE}${endpoint}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   });
 
-  const data = await res.json();
+  const text = await res.text();
+  let data: unknown;
+  try { data = text ? JSON.parse(text) : undefined; } catch { data = undefined; }
 
   if (!res.ok) {
-    throw new Error(data.message || 'Something went wrong');
+    if (res.status === 401 && token && getToken() === token) removeToken();
+    const message = data && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
+      ? data.message : `Request failed (${res.status}). Please try again.`;
+    throw new ApiError(message, res.status);
   }
 
   return data as T;
@@ -43,11 +57,13 @@ export function setToken(token: string, user?: User): void {
   if (user) {
     localStorage.setItem('user', JSON.stringify(user));
   }
+  window.dispatchEvent(new Event(SESSION_CHANGED));
 }
 
 export function removeToken(): void {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+  window.dispatchEvent(new Event(SESSION_CHANGED));
 }
 
 // Types
@@ -71,15 +87,15 @@ export interface Task {
   updatedAt?: string;
 }
 
-export const updateProfile = async (data: { name?: string; password?: string }) => {
+export const updateProfile = async (data: { name?: string; password?: string; currentPassword?: string }) => {
   const token = getToken();
   if (!token) throw new Error("No token found");
-  const response = await api<{ message: string; user: User }>('/api/auth/profile', {
+  const response = await api<{ message: string; user: User; token?: string }>('/api/auth/profile', {
     method: 'PUT',
     token,
     body: data,
   });
-  localStorage.setItem('user', JSON.stringify(response.user));
+  setToken(response.token ?? token, response.user);
   return response;
 };
 

@@ -1,45 +1,18 @@
-# Screening Test Requirements vs Current Project Structure
+# Screening requirements and implementation
 
-## Verdict
-The project is aligned with the required stack and product behavior: Node.js + Express, React + Tailwind, PostgreSQL + Sequelize, bcrypt password hashing, JWT auth, protected routes, and user-scoped task ownership.
+The repository implements the requested Node.js/Express, React/Tailwind and PostgreSQL/Sequelize stack. This maps source features to the screening requirements; it is not a production-readiness certification.
 
-## Requirement-by-requirement comparison
+| Requirement | Implementation |
+| --- | --- |
+| Signup and login | `/api/auth/signup`, `/api/auth/login`, email verification and bcrypt password hooks |
+| JWT and protected routes | HS256 bearer tokens with password-bound session versions; task, workspace, profile and `/api/auth/me` routes require a verified user |
+| Multi-user tasks | Owner-filtered CRUD and workspace ownership checks; transactional ordering updates |
+| Backend organization | Routes, controllers, models, Zod validation, auth and centralized error middleware |
+| Frontend | Next.js 16 / React 19, Tailwind, auth pages, workspaces, Board/List/Table/Timeline views and settings |
+| API integration and state | Typed fetch wrapper, auth context with server session validation, loading/error states |
+| PostgreSQL persistence | Sequelize models, foreign keys, ownership/order indexes and explicit additive migrations |
+| Verification | Unit tests and Jest/Supertest integration tests with mocked email and a gated disposable database |
 
-### 1) Authentication system
-- **Signup/Login**: Present (`/api/auth/signup`, `/api/auth/login`).
-- **Password hashing**: Present via Sequelize `User` hooks and bcrypt comparison.
-- **JWT auth**: Present through bearer tokens and `authMiddleware`.
-- **Protected routes**: Present on task, workspace, and profile routes.
-- **OTP verification**: Present through `/api/auth/verify-email` and `/api/auth/resend-otp`.
+Run migrations before deployment; runtime requests do not create or alter tables. Integration tests require `DATABASE_URL_TEST` naming a separate database ending in `_test` and `ALLOW_TEST_DATABASE_RESET=true`, and truncate that database's application tables.
 
-**Status:** Meets requirement.
-
-### 2) Task management (multi-user)
-- **Create task**: Present (`POST /api/tasks`).
-- **View only own tasks**: Present through `ownerId` filtering.
-- **Update status/order**: Present through `PUT /api/tasks/:id` and `PUT /api/tasks/batch`.
-- **Delete task**: Present (`DELETE /api/tasks/:id`).
-- **User-task relationship**: Present through `ownerId` and workspace ownership checks.
-
-**Status:** Meets requirement.
-
-### 3) Backend requirements
-- **Node.js + Express**: Present.
-- **Folder structure**: Present (`controllers`, `routes`, `models`, `middleware`).
-- **Error handling middleware**: Present (`errorHandler`).
-- **Input validation**: Present through Zod route schemas.
-
-**Status:** Meets requirement.
-
-### 4) Frontend requirements
-- **React + Tailwind**: Present through Next.js App Router and Tailwind CSS.
-- **Clean usable UI**: Present through auth pages, workspaces, Kanban board, list/table/timeline views, and settings.
-- **API integration**: Present through `lib/api.ts`.
-- **State handling**: Present through React state and auth context.
-
-**Status:** Meets requirement.
-
-### 5) Database
-- **PostgreSQL / Sequelize**: Present through Neon-compatible Sequelize models for users, workspaces, and tasks.
-
-**Status:** Meets requirement.
+See the [README](../README.md) for reproducible setup and operational limits, including per-instance rate limits, browser token storage, SMTP requirements and the remaining Sequelize/uuid advisory. No production database access or deployment was performed as part of the maintenance work.

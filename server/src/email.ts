@@ -27,6 +27,9 @@ const transporter = nodemailer.createTransport({
   host: SMTP_HOST,
   port: SMTP_PORT,
   secure: SMTP_PORT === 465,
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 20000,
   auth: {
     user: SMTP_USER,
     pass: SMTP_PASS,
@@ -35,16 +38,15 @@ const transporter = nodemailer.createTransport({
 
 // ─── Internal Helper ──────────────────────────────────────────────────────────
 
-/** Send a generic HTML email. Logs the messageId on success. */
+/** Send a generic HTML email without logging recipient information. */
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  const info = await transporter.sendMail({
+  await transporter.sendMail({
     from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
     to,
     subject,
     html,
   });
 
-  console.log('Email sent:', { to, messageId: info.messageId });
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
