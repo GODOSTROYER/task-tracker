@@ -7,13 +7,13 @@ import {
   Settings,
   LayoutGrid,
   Layout,
-  MoreHorizontal,
   Pencil,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser } from "@/lib/contexts/AuthContext";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useState } from "react";
+import { useWorkspaces, type Workspace } from "@/lib/contexts/WorkspacesContext";
 import { api, getToken } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,14 +24,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
-interface Workspace {
-  id: string;
-  name: string;
-}
-
 export function Sidebar() {
   const { signOut } = useUser();
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const { workspaces, loading, error: loadError } = useWorkspaces();
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const pathname = usePathname();
@@ -40,27 +37,10 @@ export function Sidebar() {
   const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
   const [renameName, setRenameName] = useState("");
 
-  const fetchWorkspaces = useCallback(async () => {
-    const token = getToken();
-    if (!token) return;
-    try {
-      const data = await api<Workspace[]>("/api/workspaces", { token });
-      setWorkspaces(data);
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchWorkspaces();
-    const handleUpdate = () => fetchWorkspaces();
-    window.addEventListener("workspace-updated", handleUpdate);
-    return () => window.removeEventListener("workspace-updated", handleUpdate);
-  }, [fetchWorkspaces]);
-
   const handleCreateWorkspace = async () => {
     const token = getToken();
-    if (!token || !newWorkspaceName.trim()) return;
+    if (!token || !newWorkspaceName.trim() || busy) return;
+    setBusy(true); setError("");
     try {
       const ws = await api<{ id: string }>("/api/workspaces", {
         method: "POST",
@@ -69,16 +49,17 @@ export function Sidebar() {
       });
       setNewWorkspaceName("");
       setShowCreateDialog(false);
-      fetchWorkspaces();
+      window.dispatchEvent(new Event("workspace-updated"));
       router.push(`/workspaces/${ws.id}`);
     } catch (err) {
-      console.error(err);
-    }
+      setError(err instanceof Error ? err.message : "Unable to create workspace.");
+    } finally { setBusy(false); }
   };
 
   const handleRenameWorkspace = async () => {
     const token = getToken();
-    if (!token || !editingWorkspace || !renameName.trim()) return;
+    if (!token || !editingWorkspace || !renameName.trim() || busy) return;
+    setBusy(true); setError("");
     try {
       await api(`/api/workspaces/${editingWorkspace.id}`, {
         method: "PUT",
@@ -87,11 +68,10 @@ export function Sidebar() {
       });
       setEditingWorkspace(null);
       setRenameName("");
-      fetchWorkspaces();
       window.dispatchEvent(new Event("workspace-updated"));
     } catch (err) {
-      console.error("Rename failed");
-    }
+      setError(err instanceof Error ? err.message : "Unable to rename workspace.");
+    } finally { setBusy(false); }
   };
 
   const openRenameDialog = (e: React.MouseEvent, ws: Workspace) => {
@@ -139,12 +119,13 @@ export function Sidebar() {
             <button
               onClick={() => setShowCreateDialog(true)}
               className="p-1 rounded-md text-gray-300 hover:text-blue-600 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-all"
-              title="New workspace"
+              title="New workspace" aria-label="New workspace"
             >
               <Plus className="h-3.5 w-3.5" />
             </button>
           </div>
 
+          {loadError && <p role="alert" className="px-3 text-xs text-red-600">{loadError} <button className="underline" onClick={() => window.dispatchEvent(new Event("workspace-updated"))}>Retry</button></p>}
           {workspaces.map((ws) => {
             const isActive = pathname === `/workspaces/${ws.id}`;
             return (
@@ -169,7 +150,7 @@ export function Sidebar() {
                 <button
                   onClick={(e) => openRenameDialog(e, ws)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-300 hover:text-blue-600 hover:bg-blue-50 opacity-0 group-hover/ws:opacity-100 transition-all z-10"
-                  title="Rename"
+                  title="Rename" aria-label={`Rename ${ws.name}`}
                 >
                   <Pencil className="h-3 w-3" />
                 </button>
@@ -177,7 +158,7 @@ export function Sidebar() {
             );
           })}
 
-          {workspaces.length === 0 && (
+          {!loading && !loadError && workspaces.length === 0 && (
             <p className="px-3 py-2 text-xs text-gray-400 italic">No workspaces yet.</p>
           )}
         </div>
@@ -203,15 +184,16 @@ export function Sidebar() {
 
       {/* Create workspace dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-sm p-0 overflow-hidden rounded-2xl border border-gray-100 shadow-2xl">
+        <DialogContent aria-describedby={undefined} className="max-w-sm p-0 overflow-hidden rounded-2xl border border-gray-100 shadow-2xl">
           <div className="h-1.5 bg-blue-500 w-full" />
           <div className="px-6 py-5 space-y-4">
             <DialogHeader>
               <DialogTitle className="text-gray-900 font-bold">New Workspace</DialogTitle>
             </DialogHeader>
             <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</span>
-              <Input
+              {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+              <label htmlFor="sidebar-new-workspace-name" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</label>
+              <Input id="sidebar-new-workspace-name"
                 value={newWorkspaceName}
                 onChange={e => setNewWorkspaceName(e.target.value)}
                 placeholder="e.g. Marketing, Personal, Q2 Goals"
@@ -224,7 +206,7 @@ export function Sidebar() {
               <Button variant="ghost" onClick={() => setShowCreateDialog(false)} className="rounded-xl text-gray-500">Cancel</Button>
               <Button
                 onClick={handleCreateWorkspace}
-                disabled={!newWorkspaceName.trim()}
+                disabled={busy || !newWorkspaceName.trim()}
                 className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-5"
               >
                 Create
@@ -236,15 +218,16 @@ export function Sidebar() {
 
       {/* Rename workspace dialog */}
       <Dialog open={!!editingWorkspace} onOpenChange={(o) => !o && setEditingWorkspace(null)}>
-        <DialogContent className="max-w-sm p-0 overflow-hidden rounded-2xl border border-gray-100 shadow-2xl">
+        <DialogContent aria-describedby={undefined} className="max-w-sm p-0 overflow-hidden rounded-2xl border border-gray-100 shadow-2xl">
           <div className="h-1.5 bg-violet-500 w-full" />
           <div className="px-6 py-5 space-y-4">
             <DialogHeader>
               <DialogTitle className="text-gray-900 font-bold">Rename Workspace</DialogTitle>
             </DialogHeader>
             <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</span>
-              <Input
+              {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+              <label htmlFor="sidebar-rename-workspace-name" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</label>
+              <Input id="sidebar-rename-workspace-name"
                 value={renameName}
                 onChange={e => setRenameName(e.target.value)}
                 placeholder="Workspace name"
@@ -257,7 +240,7 @@ export function Sidebar() {
               <Button variant="ghost" onClick={() => setEditingWorkspace(null)} className="rounded-xl text-gray-500">Cancel</Button>
               <Button
                 onClick={handleRenameWorkspace}
-                disabled={!renameName.trim()}
+                disabled={busy || !renameName.trim()}
                 className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-5"
               >
                 Save

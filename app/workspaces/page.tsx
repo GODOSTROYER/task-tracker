@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useWorkspaces, type Workspace } from "@/lib/contexts/WorkspacesContext";
 import { api, getToken } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -15,13 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-interface Workspace {
-  id: string;
-  name: string;
-  ownerId: string;
-  createdAt: string;
-}
-
 // Palette of accent colours cycled per workspace card
 const CARD_ACCENTS = [
   { bar: "bg-blue-500",   icon: "bg-blue-50 text-blue-500",   hover: "hover:border-blue-200 hover:ring-blue-100" },
@@ -34,29 +28,15 @@ const CARD_ACCENTS = [
 export default function WorkspacesPage() {
   const router = useRouter();
   const token = getToken();
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { workspaces, loading, error: loadError } = useWorkspaces();
+  const [error, setError] = useState("");
   const [newName, setNewName] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    if (!token) return;
-    const fetchWorkspaces = async () => {
-      try {
-        const data = await api<Workspace[]>("/api/workspaces", { token });
-        setWorkspaces(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchWorkspaces();
-  }, [token]);
-
   const handleCreate = async () => {
-    if (!token || !newName.trim()) return;
+    if (!token || !newName.trim() || creating) return;
+    setError("");
     try {
       setCreating(true);
       const created = await api<Workspace>("/api/workspaces", {
@@ -64,12 +44,12 @@ export default function WorkspacesPage() {
         token,
         body: { name: newName },
       });
-      setWorkspaces((prev) => [created, ...prev]);
+      window.dispatchEvent(new Event("workspace-updated"));
       setIsDialogOpen(false);
       setNewName("");
       router.push(`/workspaces/${created.id}`);
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : "Unable to create workspace.");
     } finally {
       setCreating(false);
     }
@@ -86,7 +66,7 @@ export default function WorkspacesPage() {
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto">
       {/* Page header */}
-      <div className="flex items-end justify-between mb-10">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">My Workspaces</h1>
           <p className="text-gray-400 text-sm">Select a workspace to view and manage its tasks.</p>
@@ -101,6 +81,7 @@ export default function WorkspacesPage() {
         </Button>
       </div>
 
+      {loadError && <p role="alert" className="mb-4 text-sm text-red-600">{loadError} <button className="underline" onClick={() => window.dispatchEvent(new Event("workspace-updated"))}>Retry</button></p>}
       {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {workspaces.map((ws, i) => {
@@ -152,15 +133,16 @@ export default function WorkspacesPage() {
 
       {/* Create dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-sm p-0 overflow-hidden rounded-2xl border border-gray-100 shadow-2xl">
+        <DialogContent aria-describedby={undefined} className="max-w-sm p-0 overflow-hidden rounded-2xl border border-gray-100 shadow-2xl">
           <div className="h-1.5 bg-blue-500 w-full" />
           <div className="px-6 py-5 space-y-4">
             <DialogHeader>
               <DialogTitle className="text-gray-900 font-bold">New Workspace</DialogTitle>
             </DialogHeader>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</Label>
-              <Input
+              {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+              <Label htmlFor="new-workspace-name" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</Label>
+              <Input id="new-workspace-name"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 placeholder="e.g. Marketing Campaign, Q3 Goals…"

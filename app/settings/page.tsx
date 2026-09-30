@@ -6,12 +6,13 @@ import { updateProfile } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, User as UserIcon, Lock, CheckCircle2 } from "lucide-react";
+import { Loader2, User as UserIcon, Lock, CheckCircle2 } from "lucide-react";
 
 export default function SettingsPage() {
-  const { user, login } = useUser();
+  const { user } = useUser();
   const [name, setName] = useState(user?.name || "");
   const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -34,17 +35,18 @@ export default function SettingsPage() {
 
     setLoading(true);
     try {
-      const res = await updateProfile({
+      await updateProfile({
         name: name !== user?.name ? name : undefined,
         password: password || undefined,
+        currentPassword: password ? currentPassword : undefined,
       });
 
        setSuccess(true);
        setPassword("");
+       setCurrentPassword("");
        setConfirmPassword("");
 
-       // Force reload to update auth context with new name
-       setTimeout(() => window.location.reload(), 1000);
+
 
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to update profile";
@@ -104,6 +106,10 @@ export default function SettingsPage() {
             </h2>
             
             <div className="space-y-4 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Input id="currentPassword" type="password" autoComplete="current-password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required={!!password} />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">New Password</Label>
                   <Input

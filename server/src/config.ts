@@ -1,49 +1,30 @@
 import dotenv from 'dotenv';
-import { Sequelize, SyncOptions } from 'sequelize';
-
+import { Sequelize } from 'sequelize';
 dotenv.config();
 dotenv.config({ path: 'server/.env' });
-
-// Make the Postgres driver explicit so Vercel's function tracer includes it.
 const pg = require('pg');
-
-const databaseUrl = process.env.NODE_ENV === 'test'
-  ? process.env.DATABASE_URL_TEST || process.env.DATABASE_URL
-  : process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  console.warn('DATABASE_URL is not set. Backend will fail to boot until it is provided.');
-}
+const databaseUrl = process.env.NODE_ENV === 'test' ? process.env.DATABASE_URL_TEST : process.env.DATABASE_URL;
 
 export const sequelize = new Sequelize(databaseUrl || 'postgres://postgres:postgres@localhost:5432/task_tracker', {
-  dialect: 'postgres',
-  dialectModule: pg,
-  logging: false,
-  pool: {
-    max: 3,
-    min: 0,
-    acquire: 30000,
-    idle: 10000,
-  },
+  dialect: 'postgres', dialectModule: pg, logging: false,
+  pool: { max: 3, min: 0, acquire: 30000, idle: 10000 },
   dialectOptions: databaseUrl?.includes('neon.tech')
-    ? { ssl: { require: true, rejectUnauthorized: false } }
-    : undefined,
+    ? { ssl: { require: true, rejectUnauthorized: true } } : undefined,
 });
-
 let connectionPromise: Promise<void> | null = null;
 
-export async function connectDB(syncOptions: SyncOptions = {}): Promise<void> {
-  if (connectionPromise && Object.keys(syncOptions).length === 0) {
-    return connectionPromise;
+export function connectDB(): Promise<void> {
+  if (!databaseUrl) return Promise.reject(new Error(process.env.NODE_ENV === 'test' ? 'DATABASE_URL_TEST is required' : 'DATABASE_URL is required'));
+  if (!connectionPromise) {
+    connectionPromise = initializeDatabase().catch(error => {
+      connectionPromise = null;
+      throw error;
+    });
   }
-
-  connectionPromise = initializeDatabase(syncOptions);
   return connectionPromise;
 }
-
-async function initializeDatabase(syncOptions: SyncOptions): Promise<void> {
+async function initializeDatabase(): Promise<void> {
   await import('./models');
   await sequelize.authenticate();
-  await sequelize.sync(syncOptions);
-  console.log('PostgreSQL connected');
+  // Schema changes belong to deployment migrations, never a request/cold start.
 }

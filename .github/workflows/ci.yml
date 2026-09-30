@@ -1,0 +1,41 @@
+name: Quality checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: task_tracker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d task_tracker_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/task_tracker_test
+      ALLOW_TEST_DATABASE_RESET: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - run: npm ci
+      - run: npm --prefix server ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build:server
+      - run: npm run test:unit
+      - run: npm test
+      - run: npm run build

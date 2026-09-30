@@ -1,22 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import User from './models/User';
+import { jwtSecret, sessionVersion } from './authSecurity';
 
 export interface AuthRequest extends Request { user?: { id: string }; }
 
-function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret && process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET is not configured');
-  }
-  return secret || 'change_me';
-}
-
-export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
+export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) return void res.status(401).json({ message: 'No token provided' });
+  if (!header?.startsWith('Bearer ')) { res.status(401).json({ message: 'No token provided' }); return; }
+  let decoded: jwt.JwtPayload;
   try {
-    const decoded = jwt.verify(header.split(' ')[1], getJwtSecret()) as { id: string };
-    req.user = { id: decoded.id };
+    const payload = jwt.verify(header.slice(7), jwtSecret(), { algorithms: ['HS256'] });
+    if (typeof payload === 'string' || typeof payload.id !== 'string' || typeof payload.version !== 'string') throw new Error('Invalid payload');
+    decoded = payload;
+  } catch { res.status(401).json({ message: 'Invalid or expired token' }); return; }
+  try {
+    const user = await User.findByPk(decoded.id);
+    if (!user?.isVerified || decoded.version !== sessionVersion(user.password)) {
+      res.status(401).json({ message: 'Invalid or expired token' }); return;
+    }
+    req.user = { id: user.id };
     next();
-  } catch { res.status(401).json({ message: 'Invalid or expired token' }); }
+  } catch (error) { next(error); }
 }

@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { PasswordRequirements, isPasswordValid } from '@/components/password-requirements';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,6 @@ import {
 import { ArrowRight, CheckCircle2, Layout } from 'lucide-react';
 
 function ResetPasswordContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
   const [password, setPassword] = useState('');

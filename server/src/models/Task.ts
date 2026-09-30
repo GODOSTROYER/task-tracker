@@ -10,7 +10,7 @@ export interface TaskAttrs {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
-  dueDate: Date | null;
+  dueDate: string | null;
   position: number;
   ownerId: string;
   workspaceId: string;
@@ -20,7 +20,7 @@ type CreateAttrs = Optional<TaskAttrs, 'id' | 'description' | 'status' | 'priori
 
 class Task extends Model<TaskAttrs, CreateAttrs> implements TaskAttrs {
   declare id: string; declare title: string; declare description: string; declare status: TaskStatus;
-  declare priority: TaskPriority; declare dueDate: Date | null; declare position: number;
+  declare priority: TaskPriority; declare dueDate: string | null; declare position: number;
   declare ownerId: string; declare workspaceId: string;
 }
 
@@ -42,6 +42,7 @@ Task.init({
     { fields: ['workspaceId'] },
     { fields: ['status'] },
     { fields: ['workspaceId', 'status', 'position'] },
+    { name: 'tasks_owner_workspace_order', fields: ['ownerId', 'workspaceId', 'status', 'position'] },
   ],
 });
 
