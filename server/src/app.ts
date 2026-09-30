@@ -37,5 +37,6 @@ app.use(async (_req, _res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/workspaces', workspaceRoutes);
+app.use('/api', (_req, res) => { res.status(404).json({ message: 'Not found' }); });
 app.use(errorHandler);
 export default app;

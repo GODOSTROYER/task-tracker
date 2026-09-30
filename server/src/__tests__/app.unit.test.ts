@@ -41,3 +41,11 @@ it('returns readiness 503 when schema migrations are missing', async () => {
   expect(result.status).toBe(503);
   expect(result.body).toEqual({ status: 'unavailable' });
 });
+
+it('returns JSON 404 for an unknown API route', async () => {
+  (connectDB as jest.Mock).mockResolvedValue(undefined);
+  const result = await request(app).get('/api/anonymous-release-smoke-not-found');
+  expect(result.status).toBe(404);
+  expect(result.headers['content-type']).toMatch(/^application\/json\b/);
+  expect(result.body).toEqual({ message: 'Not found' });
+});
