@@ -39,15 +39,15 @@ export default function HomePage() {
         <section aria-labelledby="hero-title" className="landing-hero">
           <motion.div initial={reducedMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: easeOut }} className="landing-intro mx-auto max-w-4xl px-4 text-center">
             <h1 id="hero-title" className="text-[40px] font-semibold leading-[1.08] sm:text-[64px] lg:text-[76px]">ProductSpace</h1>
-            <p className="mt-4 text-base text-muted-foreground sm:text-xl">Your tasks. A little more in flow.</p>
-            <div className="mt-7 flex flex-wrap justify-center gap-3">
-              <Button asChild className="h-11 px-5"><Link href="/signup">Get started <ArrowRight /></Link></Button>
-              <Button asChild variant="outline" className="h-11 px-5"><a href="#preview">Explore the workspace</a></Button>
+            <p className="mt-3 text-base text-muted-foreground sm:mt-4 sm:text-xl">Your tasks. A little more in flow.</p>
+            <div className="mt-5 flex flex-wrap justify-center gap-2 sm:mt-7 sm:gap-3">
+              <Button asChild className="h-10 px-3 sm:h-11 sm:px-5"><Link href="/signup">Get started <ArrowRight className="hidden sm:block" /></Link></Button>
+              <Button asChild variant="outline" className="h-10 px-3 sm:h-11 sm:px-5"><a href="#preview">Explore the workspace</a></Button>
             </div>
           </motion.div>
           <WorkspacePreview />
         </section>
-        <section aria-labelledby="workflow-title" className="border-t border-border px-4 py-10 sm:px-8 md:py-16">
+        <section aria-labelledby="workflow-title" className="border-t border-border px-4 py-8 sm:px-8 md:py-16">
           <div className="mx-auto max-w-6xl">
             <motion.h2 initial={reducedMotion ? false : { opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.7 }} id="workflow-title" className="text-center text-[26px] font-semibold leading-tight sm:text-4xl">A place for every next step.</motion.h2>
             <div className="mx-auto mt-8 grid max-w-4xl grid-cols-3 gap-3 sm:mt-12 sm:gap-10">

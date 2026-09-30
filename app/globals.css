@@ -150,8 +150,12 @@
 @keyframes skeleton-breathe { to { opacity: 0.45; } }
 
 @media (max-width: 639px) {
-  .landing-intro { padding-block: 30px; }
-  .landing-preview-content { height: 220px; }
+  .landing-intro { padding-block: 24px; }
+  .landing-preview-content { height: 176px; }
+}
+@media (max-height: 700px) and (max-width: 639px) {
+  .landing-intro { padding-block: 16px; }
+  .landing-preview-content { height: 132px; }
 }
 @media (max-height: 700px) and (min-width: 640px) {
   .landing-intro { padding-block: 24px; }

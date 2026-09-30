@@ -182,7 +182,7 @@ export function WorkspacePreview() {
             <Icon aria-hidden="true" className="relative size-3.5" /><span className="relative">{label}</span>
           </button>)}
         </div>
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-none">
+        <div className="flex min-w-0 flex-1 basis-full flex-wrap items-center gap-2 sm:flex-none sm:basis-auto">
           <div className="relative min-w-[140px] flex-1 sm:w-[180px] sm:flex-none">
             <Search aria-hidden="true" className="pointer-events-none absolute top-2 left-2.5 size-4 text-[#68717f]" />
             <Input aria-label="Search preview tasks" placeholder="Search tasks..." value={query} onChange={event => setQuery(event.target.value)} className="h-8 pl-8 text-[12px] shadow-none md:text-[12px]" />
