@@ -112,10 +112,17 @@ The authentication upgrade rejects old JWTs that lack the password-bound session
 
 ### Guarded September 2026 release
 
-When production secrets cannot be exported, [vercel.release.json](vercel.release.json) runs the reviewed migration inside a staged production build. It is selected explicitly; the normal build in `vercel.json` still never runs migrations.
+When production secrets cannot be exported, [vercel.release.json](vercel.release.json) runs the reviewed migration inside a staged production build. The remote build must receive it as `vercel.json`; passing `--local-config` alone did not override the remote build command. Temporarily replace the root configuration and restore it afterward. Do not commit the temporary replacement. The normal build in `vercel.json` never runs migrations.
 
-```bash
-vercel deploy --prod --skip-domain --local-config vercel.release.json --build-env RELEASE_DATABASE_SNAPSHOT=1 --scope godostroyers-projects
+```powershell
+$originalConfig = [System.IO.File]::ReadAllBytes((Resolve-Path vercel.json))
+try {
+  Copy-Item vercel.release.json vercel.json
+  vercel deploy --prod --skip-domain --build-env RELEASE_DATABASE_SNAPSHOT=1 --scope godostroyers-projects --yes --logs
+  if ($LASTEXITCODE -ne 0) { throw 'Staged release failed; inspect build logs.' }
+} finally {
+  [System.IO.File]::WriteAllBytes((Join-Path $PWD vercel.json), $originalConfig)
+}
 ```
 
 [scripts/release-database.cjs](scripts/release-database.cjs) requires that flag and the production environment, checks the expected baseline schema, and creates a guarded snapshot of existing user/workspace/task rows in `release_backup_20260930_4564f8c`. Retries validate the saved snapshot instead of replacing it. This is a same-database snapshot, not an independent backup or Neon point-in-time recovery.

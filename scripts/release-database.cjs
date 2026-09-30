@@ -91,7 +91,7 @@ async function main() {
         checkColumns(table, sourceColumns[table]);
       }
       const enums = await select(`
-        SELECT t.typname AS name, array_agg(e.enumlabel ORDER BY e.enumsortorder) AS labels
+        SELECT t.typname AS name, array_agg(e.enumlabel::text ORDER BY e.enumsortorder) AS labels
         FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace JOIN pg_enum e ON e.enumtypid = t.oid
         WHERE n.nspname = 'public' AND t.typname IN ('enum_tasks_status', 'enum_tasks_priority') GROUP BY t.typname`);
       requireSafe(enums.length === 2 && enums.every(type => JSON.stringify(type.labels) === JSON.stringify(
