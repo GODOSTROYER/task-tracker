@@ -34,14 +34,14 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-violet-950 text-white">
-      <nav className="container mx-auto px-4 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+      <nav className="container mx-auto px-4 py-5 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="h-9 w-9 shrink-0 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
             <Layout className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight">ProductSpace Task Tracker</span>
+          <span className="text-xl font-bold tracking-normal">ProductSpace Task Tracker</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Link href="/login"><Button variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">Sign in</Button></Link>
           <Link href="/signup"><Button className="bg-blue-500 hover:bg-blue-600 text-white">Get started</Button></Link>
         </div>
@@ -52,7 +52,7 @@ export default function HomePage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm font-medium mb-8">
             <Sparkles className="h-4 w-4" /> ProductSpace Full Stack Screening Build
           </div>
-          <h1 className="text-5xl md:text-6xl font-extrabold leading-[1.1] mb-6 tracking-tight">
+          <h1 className="break-words text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[1.1] mb-6 tracking-normal">
             Production-ready mini SaaS
             <br />
             <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">Task Management App</span>
