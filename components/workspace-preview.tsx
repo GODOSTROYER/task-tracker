@@ -177,7 +177,7 @@ export function WorkspacePreview() {
           setView(views[next].label);
           event.currentTarget.querySelectorAll<HTMLButtonElement>("[role=tab]")[next]?.focus();
         }}>
-          {views.map(({ label, icon: Icon }) => <button key={label} id={`${id}-${label}-tab`} role="tab" type="button" aria-selected={view === label} aria-controls={`${id}-panel`} tabIndex={view === label ? 0 : -1} onClick={() => setView(label)} className={`relative flex h-8 items-center gap-1.5 rounded px-2 text-[12px] sm:px-3 ${view === label ? "text-[#087f70]" : "text-[#68717f]"}`}>
+          {views.map(({ label, icon: Icon }) => <button key={label} id={`${id}-${label}-tab`} role="tab" type="button" aria-selected={view === label} aria-controls={`${id}-panel`} tabIndex={view === label ? 0 : -1} onClick={() => setView(label)} className={`relative flex h-8 items-center gap-1.5 rounded px-1.5 text-[12px] sm:px-3 ${view === label ? "text-[#087f70]" : "text-[#68717f]"}`}>
             {view === label && <motion.span layoutId={`${id}-selected-view`} transition={reduced ? { duration: 0 } : undefined} className="absolute inset-0 rounded border border-[#e4e7eb] bg-white" />}
             <Icon aria-hidden="true" className="relative size-3.5" /><span className="relative">{label}</span>
           </button>)}

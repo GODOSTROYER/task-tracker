@@ -42,7 +42,7 @@ export default function HomePage() {
             <p className="mt-3 text-base text-muted-foreground sm:mt-4 sm:text-xl">Your tasks. A little more in flow.</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2 sm:mt-7 sm:gap-3">
               <Button asChild className="h-10 px-3 sm:h-11 sm:px-5"><Link href="/signup">Get started <ArrowRight className="hidden sm:block" /></Link></Button>
-              <Button asChild variant="outline" className="h-10 px-3 sm:h-11 sm:px-5"><a href="#preview">Explore the workspace</a></Button>
+              <Button asChild variant="outline" className="h-10 px-3 sm:h-11 sm:px-5"><a href="#preview"><span className="sm:hidden">Explore workspace</span><span className="hidden sm:inline">Explore the workspace</span></a></Button>
             </div>
           </motion.div>
           <WorkspacePreview />
