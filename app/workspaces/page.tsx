@@ -1,40 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import Link from "next/link";
 import { useWorkspaces, type Workspace } from "@/lib/contexts/WorkspacesContext";
 import { api, getToken } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Plus, Briefcase, Loader2, ArrowRight } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Plus, Folder, Loader2, ArrowUpRight, RefreshCw } from "lucide-react";
+import { WorkspaceNameDialog } from "@/components/workspace-name-dialog";
 import { cn } from "@/lib/utils";
 
-// Palette of accent colours cycled per workspace card
 const CARD_ACCENTS = [
-  { bar: "bg-blue-500",   icon: "bg-blue-50 text-blue-500",   hover: "hover:border-blue-200 hover:ring-blue-100" },
-  { bar: "bg-violet-500", icon: "bg-violet-50 text-violet-500", hover: "hover:border-violet-200 hover:ring-violet-100" },
-  { bar: "bg-amber-400",  icon: "bg-amber-50 text-amber-500",  hover: "hover:border-amber-200 hover:ring-amber-100" },
-  { bar: "bg-emerald-500",icon: "bg-emerald-50 text-emerald-600", hover: "hover:border-emerald-200 hover:ring-emerald-100" },
-  { bar: "bg-rose-500",   icon: "bg-rose-50 text-rose-500",    hover: "hover:border-rose-200 hover:ring-rose-100" },
+  "bg-[#e8f5f1] text-[#087f70]",
+  "bg-[#fff0ec] text-[#ba4b35]",
+  "bg-[#fff6dc] text-[#946900]",
+  "bg-[#edf3ff] text-[#3d67b1]",
 ];
 
 export default function WorkspacesPage() {
   const router = useRouter();
-  const token = getToken();
   const { workspaces, loading, error: loadError } = useWorkspaces();
   const [error, setError] = useState("");
   const [newName, setNewName] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   const handleCreate = async () => {
+    const token = getToken();
     if (!token || !newName.trim() || creating) return;
     setError("");
     try {
@@ -50,122 +44,52 @@ export default function WorkspacesPage() {
       router.push(`/workspaces/${created.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create workspace.");
-    } finally {
-      setCreating(false);
-    }
+    } finally { setCreating(false); }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
+  const openCreate = () => { setError(""); setIsDialogOpen(true); };
 
   return (
-    <div className="p-6 md:p-10 max-w-5xl mx-auto">
-      {/* Page header */}
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-1">My Workspaces</h1>
-          <p className="text-gray-400 text-sm">Select a workspace to view and manage its tasks.</p>
+    <div className="mx-auto w-full max-w-[1280px] px-5 py-8 text-[#171b22] tracking-normal md:px-8 md:py-10 lg:px-10">
+      <header className="mb-8 flex flex-wrap items-center justify-between gap-5 border-b border-[#e4e7eb] pb-6">
+        <div className="min-w-0">
+          <h1 className="text-[28px] font-semibold leading-9 tracking-normal">Workspaces</h1>
+          <p className="mt-2 text-sm leading-6 text-[#68717f]">Your projects and tasks.</p>
         </div>
+        <Button onClick={openCreate} className="h-10 gap-2 rounded-md bg-[#087f70] px-4 text-[13px] text-white shadow-none transition-colors hover:bg-[#066b5e] focus-visible:ring-[#087f70]/30"><Plus className="size-4" />New workspace</Button>
+      </header>
 
-        <Button
-          onClick={() => setIsDialogOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl gap-2 shadow-sm shadow-blue-200"
-        >
-          <Plus className="h-4 w-4" />
-          New Workspace
-        </Button>
-      </div>
+      {loadError && <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 border-l-2 border-[#ba4b35] pl-4 text-sm"><p className="min-w-0 break-words text-red-700">{loadError}</p><Button variant="ghost" onClick={() => window.dispatchEvent(new Event("workspace-updated"))} className="rounded-md text-[13px] text-[#087f70] hover:bg-[#e8f5f1]"><RefreshCw className="size-4" />Retry</Button></div>}
 
-      {loadError && <p role="alert" className="mb-4 text-sm text-red-600">{loadError} <button className="underline" onClick={() => window.dispatchEvent(new Event("workspace-updated"))}>Retry</button></p>}
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {workspaces.map((ws, i) => {
-          const accent = CARD_ACCENTS[i % CARD_ACCENTS.length];
-          return (
-            <button
-              key={ws.id}
-              onClick={() => router.push(`/workspaces/${ws.id}`)}
-              className={cn(
-                "group text-left bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden",
-                "hover:shadow-lg hover:ring-1 transition-all duration-150",
-                accent.hover
-              )}
-            >
-              {/* Coloured top bar */}
-              <div className={cn("h-1.5 w-full", accent.bar)} />
-
-              <div className="p-5">
-                {/* Icon + name */}
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shrink-0", accent.icon)}>
-                    <Briefcase className="h-5 w-5" />
+      <AnimatePresence mode="wait" initial={false}>
+        {loading ? (
+          <motion.div key="loading" role="status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0 : 0.12 }} className="flex min-h-48 items-center justify-center gap-3 text-sm text-[#68717f]">
+            <Loader2 aria-hidden="true" className="size-4 animate-spin text-[#087f70] motion-reduce:animate-none" />Loading workspaces...
+          </motion.div>
+        ) : workspaces.length > 0 ? (
+          <motion.div key="workspaces" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0 : 0.15 }} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {workspaces.map((ws, i) => (
+              <motion.div key={ws.id} initial={reducedMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reducedMotion ? 0 : 0.18, delay: reducedMotion ? 0 : Math.min(i * 0.025, 0.12) }}>
+                <Link href={`/workspaces/${ws.id}`} className="group flex h-full min-h-[172px] flex-col rounded-lg border border-[#e4e7eb] bg-white p-5 transition-[border-color,box-shadow] duration-150 hover:border-[#a8cfc6] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#087f70]">
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-md", CARD_ACCENTS[i % CARD_ACCENTS.length])}><Folder aria-hidden="true" className="size-[18px]" strokeWidth={1.7} /></span>
+                    <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-[#68717f] transition-colors group-hover:text-[#087f70] group-focus-visible:text-[#087f70]" />
                   </div>
-                  <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-0.5 transition-all mt-1 shrink-0" />
-                </div>
-
-                <h2 className="font-bold text-gray-900 text-base leading-tight mb-1 group-hover:text-inherit transition-colors line-clamp-1">
-                  {ws.name}
-                </h2>
-                <p className="text-xs text-gray-400">
-                  Created {new Date(ws.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-
-        {/* Add new card shortcut */}
-        <button
-          onClick={() => setIsDialogOpen(true)}
-          className="group text-left bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-300 hover:bg-blue-50/40 transition-all duration-150 p-5 flex flex-col items-center justify-center gap-2 min-h-[130px]"
-        >
-          <div className="h-10 w-10 rounded-xl border-2 border-dashed border-gray-300 group-hover:border-blue-400 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-all">
-            <Plus className="h-5 w-5" />
-          </div>
-          <span className="text-sm font-semibold text-gray-400 group-hover:text-blue-500 transition-colors">New workspace</span>
-        </button>
-      </div>
-
-      {/* Create dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent aria-describedby={undefined} className="max-w-sm p-0 overflow-hidden rounded-2xl border border-gray-100 shadow-2xl">
-          <div className="h-1.5 bg-blue-500 w-full" />
-          <div className="px-6 py-5 space-y-4">
-            <DialogHeader>
-              <DialogTitle className="text-gray-900 font-bold">New Workspace</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-1.5">
-              {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-              <Label htmlFor="new-workspace-name" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</Label>
-              <Input id="new-workspace-name"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                placeholder="e.g. Marketing Campaign, Q3 Goals…"
-                className="rounded-xl border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                autoFocus
-                onKeyDown={e => e.key === "Enter" && handleCreate()}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-              <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl text-gray-500">
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreate}
-                disabled={!newName.trim() || creating}
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-5"
-              >
-                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+                  <h2 className="break-words text-base font-semibold leading-6 [overflow-wrap:anywhere]">{ws.name}</h2>
+                  <p className="mt-2 text-xs leading-5 text-[#68717f]">Created {new Date(ws.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</p>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : !loadError ? (
+          <motion.section key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.15 }} className="flex min-h-64 flex-col items-center justify-center text-center">
+            <Folder aria-hidden="true" className="mb-4 size-7 text-[#087f70]" strokeWidth={1.5} />
+            <h2 className="text-base font-semibold">No workspaces yet</h2>
+            <p className="mt-2 max-w-xs text-sm leading-6 text-[#68717f]">Create a workspace to start organizing your tasks.</p>
+            <Button onClick={openCreate} variant="ghost" className="mt-4 rounded-md text-[13px] text-[#087f70] hover:bg-[#e8f5f1]"><Plus className="size-4" />New workspace</Button>
+          </motion.section>
+        ) : null}
+      </AnimatePresence>
+      <WorkspaceNameDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} title="New workspace" inputId="new-workspace-name" name={newName} onNameChange={setNewName} error={error} busy={creating} onSubmit={handleCreate} submitLabel="Create" />
     </div>
   );
 }

@@ -1,38 +1,40 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useUser } from "@/lib/contexts/AuthContext";
-import { updateProfile } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, User as UserIcon, Lock, CheckCircle2 } from "lucide-react";
+import { useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
+import { useUser } from '@/lib/contexts/AuthContext';
+import { updateProfile } from '@/lib/api';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Lock, Save, User as UserIcon } from 'lucide-react';
+import { PasswordField } from '@/components/password-field';
+import { PasswordRequirements } from '@/components/password-requirements';
+import { AuthFeedback, SubmitButton, authFieldClassName, authSurfaceClassName } from '@/components/auth-shell';
 
 export default function SettingsPage() {
   const { user } = useUser();
-  const [name, setName] = useState(user?.name || "");
-  const [password, setPassword] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState(user?.name || '');
+  const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
+  const reducedMotion = useReducedMotion();
+  const mismatch = !!password && !!confirmPassword && password !== confirmPassword;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setSuccess(false);
-
     if (password && password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       return;
     }
-
     if (password && password.length < 8) {
-        setError("Password must be at least 8 characters");
-        return;
+      setError('Password must be at least 8 characters');
+      return;
     }
-
     setLoading(true);
     try {
       await updateProfile({
@@ -40,16 +42,12 @@ export default function SettingsPage() {
         password: password || undefined,
         currentPassword: password ? currentPassword : undefined,
       });
-
-       setSuccess(true);
-       setPassword("");
-       setCurrentPassword("");
-       setConfirmPassword("");
-
-
-
+      setSuccess(true);
+      setPassword('');
+      setCurrentPassword('');
+      setConfirmPassword('');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to update profile";
+      const message = err instanceof Error ? err.message : 'Failed to update profile';
       setError(message);
     } finally {
       setLoading(false);
@@ -57,105 +55,92 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 md:p-10 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Account Settings</h1>
-        <p className="text-gray-500 mt-2">Manage your profile and security preferences.</p>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 md:p-8">
-        <form onSubmit={handleSave} className="space-y-6">
-          
-          {/* Profile Section */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-900">
-              <UserIcon className="h-5 w-5 text-blue-500" />
-              Profile Information
-            </h2>
-            
+    <motion.div
+      initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: reducedMotion ? 0 : 0.2 }}
+      className={`mx-auto min-h-full w-full max-w-3xl bg-[#f5f6f8] px-5 py-8 sm:px-8 sm:py-10 ${authSurfaceClassName}`}
+    >
+      <header className="mb-7">
+        <h1 className="text-[28px] font-semibold leading-tight tracking-normal">Account settings</h1>
+      </header>
+      <form onSubmit={handleSave} aria-busy={loading}>
+        <section aria-labelledby="profile-heading" className="border-t border-[#e4e7eb] py-6">
+          <h2 id="profile-heading" className="mb-5 flex items-center gap-2 text-base font-semibold"><UserIcon className="size-4 text-[#68717f]" aria-hidden="true" /> Profile</h2>
+          <div className="max-w-[400px] space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">Full name</Label>
               <Input
                 id="name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={e => { setName(e.target.value); setSuccess(false); }}
                 placeholder="Your name"
-                className="max-w-md"
+                autoComplete="name"
+                className={authFieldClassName}
               />
             </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Email address</Label>
               <Input
                 id="email"
-                value={user?.email || ""}
+                value={user?.email || ''}
                 disabled
-                className="max-w-md bg-gray-50 text-gray-500"
+                autoComplete="email"
+                className={`${authFieldClassName} disabled:bg-[#f5f6f8] disabled:opacity-100 disabled:text-[#68717f]`}
+                aria-describedby="email-note"
               />
-              <p className="text-xs text-gray-400">Email cannot be changed.</p>
+              <p id="email-note" className="text-xs text-[#68717f]">Email cannot be changed.</p>
             </div>
           </div>
-
-          <div className="h-px bg-gray-100" />
-
-          {/* Security Section */}
-          <div className="space-y-4">
-             <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-900">
-              <Lock className="h-5 w-5 text-blue-500" />
-              Security
-            </h2>
-            
-            <div className="space-y-4 max-w-md">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Current Password</Label>
-                  <Input id="currentPassword" type="password" autoComplete="current-password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required={!!password} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">New Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Leave blank to keep current"
-                  />
-                </div>
-                
-                {password && (
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Confirm new password"
-                      />
-                    </div>
-                )}
+        </section>
+        <section aria-labelledby="security-heading" className="border-t border-[#e4e7eb] py-6">
+          <h2 id="security-heading" className="mb-5 flex items-center gap-2 text-base font-semibold"><Lock className="size-4 text-[#68717f]" aria-hidden="true" /> Security</h2>
+          <div className="max-w-[400px] space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current password</Label>
+              <PasswordField
+                id="currentPassword"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={e => { setCurrentPassword(e.target.value); setSuccess(false); }}
+                required={!!password}
+              />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">New password</Label>
+              <PasswordField
+                id="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setSuccess(false); }}
+                placeholder="Leave blank to keep current"
+                aria-describedby="password-requirements"
+              />
+              <PasswordRequirements password={password} id="password-requirements" />
+            </div>
+            {password && <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm new password</Label>
+              <PasswordField
+                id="confirmPassword"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={e => { setConfirmPassword(e.target.value); setSuccess(false); }}
+                required
+                aria-invalid={mismatch}
+                aria-describedby="password-match"
+              />
+              <AuthFeedback message={mismatch ? 'Passwords do not match' : ''} id="password-match" />
+            </div>}
           </div>
-
-          <div className="pt-4 flex items-center gap-4">
-            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700 min-w-[120px]">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
-            </Button>
-            
-            {success && (
-                <div className="flex items-center gap-2 text-green-600 text-sm font-medium animate-in fade-in slide-in-from-left-2">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Updates saved successfully!
-                </div>
-            )}
-             {error && (
-                <div className="text-red-500 text-sm font-medium animate-in fade-in">
-                    {error}
-                </div>
-            )}
+        </section>
+        <div className="space-y-4 border-t border-[#e4e7eb] pt-6">
+          <div className="max-w-[400px] space-y-2">
+            <AuthFeedback message={error} />
+            <AuthFeedback message={success ? 'Changes saved successfully.' : ''} kind="success" />
           </div>
-
-        </form>
-      </div>
-    </div>
+          <SubmitButton type="submit" pending={loading} pendingLabel="Saving changes..." icon={Save} className="min-w-[160px]">Save changes</SubmitButton>
+        </div>
+      </form>
+    </motion.div>
   );
 }
