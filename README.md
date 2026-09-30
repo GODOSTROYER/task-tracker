@@ -4,7 +4,7 @@ A workspace task tracker built for the ProductSpace Full Stack Developer Intern 
 
 [Live application](https://arnav-task-tracker.vercel.app) | [Repository](https://github.com/GODOSTROYER/task-tracker)
 
-![ProductSpace Task Tracker - Kanban board](docs/task-tracker-board.png)
+![ProductSpace Task Tracker - Kanban board](public/workspace-preview.jpg)
 
 ## Features
 
@@ -13,6 +13,20 @@ A workspace task tracker built for the ProductSpace Full Stack Developer Intern 
 - Tasks with description, status, priority, due date and ordering; transactional drag-and-drop updates.
 - A starter workspace on verification, profile editing and email password resets.
 - Session validation through `GET /api/auth/me`; password changes and resets revoke previously issued sessions.
+- Responsive Board, List, Table and Timeline views with task search and priority filtering.
+- Motion-based transitions and microinteractions that respect the system's reduced-motion setting.
+- An interactive landing-page workspace with local sample data, separate from account data.
+
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| UI and interaction | Radix UI, Lucide icons, Motion, dnd-kit, locally bundled Inter |
+| Backend | Node.js 24, Express, Zod validation |
+| Authentication | bcrypt, JWT, Nodemailer verification and reset emails |
+| Database | PostgreSQL (Neon), Sequelize, explicit SQL migrations |
+| Deployment | Vercel, same-origin Express API |
 
 ## Run locally
 
