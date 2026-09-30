@@ -49,7 +49,7 @@ export default function HomePage() {
         </section>
         <section aria-labelledby="workflow-title" className="border-t border-border px-4 py-8 sm:px-8 md:py-16">
           <div className="mx-auto max-w-6xl">
-            <motion.h2 initial={reducedMotion ? false : { opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.7 }} id="workflow-title" className="text-center text-[26px] font-semibold leading-tight sm:text-4xl">A place for every next step.</motion.h2>
+            <motion.h2 initial={reducedMotion ? false : { opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.1 }} id="workflow-title" className="text-center text-[26px] font-semibold leading-tight sm:text-4xl">A place for every next step.</motion.h2>
             <div className="mx-auto mt-8 grid max-w-4xl grid-cols-3 gap-3 sm:mt-12 sm:gap-10">
               {steps.map(({ title, icon: Icon, color }, index) => (
                 <motion.div key={title} initial={reducedMotion ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: reducedMotion ? 0 : index * 0.08 }} className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
