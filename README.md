@@ -2,6 +2,8 @@
 
 A workspace task tracker built for the ProductSpace Full Stack Developer Intern screening: Next.js 16 / React 19, an Express + TypeScript API, PostgreSQL through Sequelize, email verification, and Board, List, Table and Timeline views.
 
+[Live application](https://arnav-task-tracker.vercel.app) | [Repository](https://github.com/GODOSTROYER/task-tracker)
+
 ![ProductSpace Task Tracker - Kanban board](docs/task-tracker-board.png)
 
 ## Features
@@ -108,7 +110,17 @@ npm run db:check
 
 The authentication upgrade rejects old JWTs that lack the password-bound session version. Existing plaintext verification codes and reset tokens no longer match the hashed checks; users must request new codes or links. Account and task data are preserved. Migration SQL does not itself revoke tokens; the upgraded authentication code changes their acceptance.
 
-These instructions describe deployment preparation; the maintenance work did not access a production database or deploy the application.
+### Guarded September 2026 release
+
+When production secrets cannot be exported, [vercel.release.json](vercel.release.json) runs the reviewed migration inside a staged production build. It is selected explicitly; the normal build in `vercel.json` still never runs migrations.
+
+```bash
+vercel deploy --prod --skip-domain --local-config vercel.release.json --build-env RELEASE_DATABASE_SNAPSHOT=1 --scope godostroyers-projects
+```
+
+[scripts/release-database.cjs](scripts/release-database.cjs) requires that flag and the production environment, checks the expected baseline schema, and creates a guarded snapshot of existing user/workspace/task rows in `release_backup_20260930_4564f8c`. Retries validate the saved snapshot instead of replacing it. This is a same-database snapshot, not an independent backup or Neon point-in-time recovery.
+
+The helper applies the existing migration and checks schema readiness before the app build. Verify `/api/ready` on the staged deployment before promotion. Use this dated helper only for this reviewed release; future migrations need their own backup and adoption review. `.vercelignore` excludes local credentials, profiles, caches, and generated output from CLI uploads.
 
 ## Limits and dependency status
 

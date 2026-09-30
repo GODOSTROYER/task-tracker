@@ -1,0 +1,29 @@
+# Local credentials, profiles, and caches must never enter a deployment.
+.git
+.vercel
+.appdata
+.localappdata
+AppData
+**/.appdata
+**/.localappdata
+**/AppData
+.env*
+**/.env*
+!.env.example
+!server/.env.example
+*.pem
+**/*.pem
+
+# Dependencies and build output are recreated by the remote build.
+node_modules
+**/node_modules
+.next
+out
+coverage
+**/coverage
+server/dist
+*.tsbuildinfo
+**/*.tsbuildinfo
+next-env.d.ts
+*.log
+**/*.log
